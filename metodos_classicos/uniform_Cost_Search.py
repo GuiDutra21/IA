@@ -136,7 +136,7 @@ if __name__ == "__main__":
     visitados = []
     
     # heap de minimo
-    # Coloquei o None apenas para facilitar o acesso aos indices dos pais e dos filhos
+    # Coloquei o None apenas para facilitar o acesso aos indices dos pais e dos filhos nos calulos das funcoes da heap
     heap = [None, A, B, C, D, E, F, G, H, I]
     
     for i, node in enumerate(heap):
