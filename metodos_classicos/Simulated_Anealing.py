@@ -3,21 +3,26 @@ import math
 import matplotlib.pyplot as plt
 
 class item():
+    """Representa um item da mochila com nome, peso e utilidade"""
     def __init__(self,nome,peso,utilidade):
         self.nome = nome
         self.peso = peso
         self.utilidade = utilidade
         
 def solucao_inicial(items):
+    """Gera uma solução inicial aleatória"""
     return [random.randint(0,1) for _ in range(len(items))]
 
 def peso_total(solucao, items):
+    """Calcula o peso total de uma solução"""
     return sum(items[i].peso * solucao[i] for i in range(len(items)))
 
 def util(solucao, items):
+    """Calcula a utilidade total sem considerar a capacidade"""
     return sum(items[i].utilidade * solucao[i] for i in range(len(items)))
 
 def utilidade_total(solucao, items, capacidade):
+    """Avalia a utilidade de uma solução com penalização se exceder a capacidade"""
     peso = peso_total(solucao,items)
     utilidade = util(solucao,items)
     if peso > capacidade:
@@ -26,12 +31,14 @@ def utilidade_total(solucao, items, capacidade):
     return utilidade
 
 def vizinho(solucao):
+    """Gera uma solução vizinha por flip de um bit aleatório"""
     nova = solucao.copy()
     i = random.randint(0, len(solucao) - 1)
     nova[i] = 1 - nova[i]  # inverte um item aleatório
     return nova
 
 def print_resultado(solucao, melhor_utilidade, items):
+    """Imprime os itens escolhidos, peso total e utilidade"""
     print("Items da solucao encontrada:")
     for i in range(len(solucao)):
         if solucao[i]:
@@ -41,6 +48,7 @@ def print_resultado(solucao, melhor_utilidade, items):
             
 
 def simulated_annealing(temp_inicial, temp_min, taxa_resfriamento, items, capacidade):
+    """Executa o algoritmo de Simulated Annealing para o problema da mochila"""
     atual = solucao_inicial(items)
     melhor = atual
     atual_utilidade = utilidade_total(atual,items, capacidade)
@@ -50,24 +58,25 @@ def simulated_annealing(temp_inicial, temp_min, taxa_resfriamento, items, capaci
     historico = []
 
     while temperatura > temp_min:
+        # Gera um estado vizinho
         candidato = vizinho(atual)
         candidato_utilidade = utilidade_total(candidato, items, capacidade)
         
         delta = candidato_utilidade - atual_utilidade
         
-        historico.append(atual_utilidade)
+        historico.append(atual_utilidade) # Apenas para mostrar o grafico no final
         
         if delta > 0:
             atual, atual_utilidade = candidato, candidato_utilidade
         
             if atual_utilidade > melhor_utilidade:
-                melhor, melhor_utilidade = atual, atual_utilidade
+                melhor, melhor_utilidade = atual, atual_utilidade  # Aatualiza o melhor
         else:
             prob = math.exp(delta / temperatura)
             if random.random() < prob:
                 atual, atual_utilidade = candidato, candidato_utilidade
         
-        temperatura *= taxa_resfriamento
+        temperatura *= taxa_resfriamento  # Aplica o resfriamento
 
     return melhor, melhor_utilidade, historico
     
@@ -96,6 +105,8 @@ if __name__ == "__main__":
         capacidade=capacidade
     )
     print_resultado(melhor, melhor_utilidade, items)
+    
+    # Mostra o grafico da evolucao da utilidade
     plt.plot(historico)
     plt.title("Evolução da utilidade ao longo do tempo")
     plt.xlabel("Iteração")

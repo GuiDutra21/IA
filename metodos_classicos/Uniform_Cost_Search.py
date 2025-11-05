@@ -48,6 +48,7 @@ def fixDown(heap, no):
         indice = filho
 
 def remove(heap):
+    """Remove o elemento do topo da heapo e retorna ele"""
     swap(heap, heap[1], heap[len(heap) - 1])
     retorno = heap.pop()
     if len(heap) > 1:
@@ -55,11 +56,12 @@ def remove(heap):
     return retorno
     
 def atualiza(heap, no, novo_custo):
+    """Atualiza um dado elemento na heap"""
     no.custo = novo_custo
     fiuxUp(heap, no)
 
 def UCS(heap, visitados, inicio):
-    
+    """Usando o algoritmo do Uniform Cost Search encontra o menor caminho do no incial ate os demais"""
     atualiza(heap,inicio,0)
     
     while len(heap) > 1:
@@ -143,13 +145,9 @@ if __name__ == "__main__":
         if(node == None):
             continue
         node.indice = i
-          
-    # for i in heap:
-    #     if(i == None):
-    #         continue
-    #     print(f"{i.id} {i.indice} {i.custo} {i.caminho}")
     
-    inicio = input("No inicial: ").strip().upper()
+    # Recebe o no inicial
+    inicio = input("Informe o no inicial, somente entre A e I: ").strip().upper()
     if not inicio:
         raise ValueError("Entrada vazia")
     
@@ -157,16 +155,11 @@ if __name__ == "__main__":
     
     if indice < 1 or indice >= len(heap):
         raise IndexError("Nó inicial fora do intervalo")
+    
     UCS(heap, visitados, heap[indice])
     
-    # debug = [A, B, C, D, E, F, G, H, I]
-    # for i in debug:
-    #         if(i == None):
-    #             continue
-    #         print(f"{i.id} {i.custo} {i.caminho}")
-    # print()
-    
-    objetivo = input("No de destino: ").strip().upper()
+    # Decobre o no final
+    objetivo = input("Informe o no de destino, somente entre A e I: ").strip().upper()
     alvo = None
     for n in nos:
         if n.id == objetivo:
