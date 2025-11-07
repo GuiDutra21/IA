@@ -53,14 +53,14 @@ def backward(observations, print_output):
     # Looping through days
     for i, observation in enumerate(observations):
 
-        # If umbrella is observed, dot P(Et | Xt) with P(Ek+1:t | Xk)
+        # If umbrella is observed, dot P(Ek | Xk) with P(Ek+1:t | Xk)
         if observation == possible_observations['Umbrella']:
             a = np.dot(emission_probabilities_umbrella, b_hat)
-        # If umbrella is not observed, dot P(~Et | Xt) with P(Ek+1:t | Xk)
+        # If umbrella is not observed, dot P(~Ek | Xk) with P(Ek+1:t | Xk)
         else:
             a = np.dot(emission_probabilities_no_umbrella, b_hat)
 
-        # Dotting a with P(Xt | Xt-1)
+        # Dotting a with P(Xk | Xk-1)
         b = np.dot(a, transition_probabilities)
 
         if print_output:
