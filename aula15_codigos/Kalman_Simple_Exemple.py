@@ -4,9 +4,9 @@ import matplotlib.pyplot as plt
 
 # Initializing variables
 ti = 0;
-tf = 1000; #1000 original, usar 200, 500 e 1000
-delta_t = 1;
-t = np.linspace(ti, tf, int(tf/delta_t))
+tf = 1000; #1000 original, usar 200, 500 e 1000 -> Tempo final da simulação
+delta_t = 1;  # Intervalo de tempo entre medições
+t = np.linspace(ti, tf, int(tf/delta_t)) # Vetor tempo
 I = np.identity(2)
 
 # Initial Conditions
@@ -16,19 +16,34 @@ v0 = 0;
 ##t = 1  # Difference in time
 
 # noise 
-sigma_est = 0.15; # 0.05 é 26 dB SNR / 0.1 é 20 dB SNR / 0.5 é 6 dB SNR
-sigma_obs = 5.0; 
+sigma_est = 0.15; # 0.05 é 26 dB SNR / 0.1 é 20 dB SNR / 0.5 é 6 dB SNR -> Ruído do processo (incerteza no modelo)
+sigma_obs = 5.0; # Ruído das observações (muito maior!) 
 
 # Real model
 S = s0 + v*t;
+
+# Observações ruidosas (o que o sensor realmente mede)
 S_obs = S+sigma_obs*np.random.randn(t.size)
 
+# Matriz de transição de estado - modelo de velocidade constante
 A = np.array([[1, delta_t],[0, 1]])
-H = np.zeros([1,2])
-H[0,0] = 1
-Q = (sigma_est**2)*I
-R = (sigma_obs**2)
+# Estado = [posição, velocidade], então:
+# nova_posição = posição + velocidade*delta_t
+# nova_velocidade = velocidade (constante)
+
+H = np.zeros([1,2]) # Matriz de observação - só observamos a posição
+H[0,0] = 1 # H = [1, 0] - mapeia estado [pos, vel] para apenas [pos]
+
+# Matriz de covariância do ruído do processo
+Q = (sigma_est**2)*I # Pequena incerteza no modelo
+
+# Matriz de covariância do ruído das observações  
+R = (sigma_obs**2) # Grande incerteza nas medições (25)
+
+# Inicialização da matriz de covariância do erro
 P0 = (sigma_est**2)*I
+
+# Vetor para armazenar as estimativas [posição, velocidade]
 x_hat = np.zeros([2,t.size])
 
 # First step

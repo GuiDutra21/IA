@@ -10,36 +10,39 @@ t = np.linspace(ti, tf, int(tf/delta_t))
 I = np.identity(4)
 
 # Initial Conditions
-vx = 5; # m/s
-vy = 2; # m/s
-s0x = 0;
+vx = 5; # m/s - velocidade em X
+vy = 2; # m/s - velocidade em Y
+s0x = 0; # Posicoes iniciais
 s0y = 0;
 v0x = 0;
 v0y = 0;
 ##t = 1  # Difference in time
 
 # noise 
-sigma_est_x = 0.15;
-sigma_est_y = 0.15;
-sigma_obs_x = 0.25;
-sigma_obs_y = 0.25;
+sigma_est_x = 0.15; sigma_est_y = 0.15; # ruído do processo
+sigma_obs_x = 0.25; sigma_obs_y = 0.25; # ruído das observações
 
 # Real model
 S = np.zeros([2,t.size])
-S[0,:] = s0x  + vx*t;
-S[1,:] = s0y  + vy*t;
+S[0,:] = s0x  + vx*t; # Posição real em X
+S[1,:] = s0y  + vy*t; # Posição real em Y
+
 S_obs = np.zeros([2,t.size])
-S_obs[0,:] = S[0,:]+sigma_obs_x*np.random.randn(t.size)
-S_obs[1,:] = S[1,:]+sigma_obs_y*np.random.randn(t.size)
+S_obs[0,:] = S[0,:]+sigma_obs_x*np.random.randn(t.size)  # X com ruído
+S_obs[1,:] = S[1,:]+sigma_obs_y*np.random.randn(t.size)  # Y com ruído
 
 A = np.array([[1, 0, delta_t, 0],[0, 1, 0, delta_t],[0, 0, 1, 0],[0, 0, 0, 1]])
+
 H = np.zeros([2,4])
 H[0,0] = 1
 H[1,1] = 1
-Q = [10, 10, 25, 25]
-Q = np.diag(Q)
-R = [sigma_obs_x, sigma_obs_y]
+
+Q = [10, 10, 25, 25] # Ruído do processo
+Q = np.diag(Q) 
+
+R = [sigma_obs_x, sigma_obs_y] # Ruído das observações
 R = np.diag(R)
+
 P0 = np.array([[sigma_obs_x, 0, 0, 0],[0, sigma_obs_y, 0, 0],[0, 0, 10**4, 0],[0, 0, 0, 10**4]])
 x_hat = np.zeros([4,t.size])
 
@@ -87,5 +90,5 @@ vy_r = np.ones(t.size)*vy
 plt.plot(t, vy_r, 'b-')
 plt.plot(t, x_hat[3,:], 'r-')
 
-
-
+plt.tight_layout()
+plt.show()
