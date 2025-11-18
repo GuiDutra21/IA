@@ -1,7 +1,10 @@
 # Documentação sobre o algoritmo da rede Bayesiana
 
 ## Objetivo
-Implementar uma rede Bayesiana para modelar incertezas em um conjunto de variáveis e realizar inferências probabilísticas com base em evidências observadas.
+
+Como descrito por Pearl (1988), "redes Bayesianas permitem raciocínio probabilístico eficiente ao explorar a estrutura de independência condicional presente em muitos domínios reais".
+
+Nesse contexto, o objetivo desse algoritmo é implementar uma rede Bayesiana para modelar de forma explícita as relações de dependência condicional e incerteza entre um conjunto de variáveis aleatórias, permitindo realizar inferências probabilísticas precisas e eficientes com base em evidências observadas. Assim, podemos realizar tanto consultas de diagnóstico (inferir causas a partir de efeitos observados) quanto consultas de predição (antecipar consequências a partir de condições conhecidas), facilitando a tomada de decisões informadas em contextos complexos onde a informação disponível é incompleta ou ruidosa.
 
 ## Descrição do problema
 O cenário abaixo é uma rede Bayesiana que descreve as relações de dependência entre os principais fatores considerados no processo de análise de crédito de um cliente. Nessa rede, variáveis como renda, depósitos realizados, pontualidade nos pagamentos, posse de imóvel próprio e garantia oferecida no empréstimo são modeladas de forma probabilística. Logo, é possível calcular a probabilidade de certos comportamentos financeiros ocorrerem a partir de evidências observadas, como por exemplo, a chance de um cliente não efetuar o pagamento em dia dado que possui renda baixa e não forneceu garantia no empréstimo, contribuindo assim para uma análise de risco mais informada na concessão de crédito.
@@ -61,11 +64,14 @@ Corresponde à oferta de uma garantia (como um bem ou fiador) ao solicitar o emp
 
 </center>
 
+
 # Documentação sobre o algoritmo de modelos Markovianos ocultos(Forward-Backwar: Suavização)
 
 ## Objetivo
 
-Implementar um modelo Makoviano Oculto através dos algoritmos de Forward, Backward e Smoothing (Forward-Backward) para realizar inferência probabilística em modelos dinâmicos ocultos, estimando a evolução do estado interno de um sistema ao longo do tempo com base em observações parciais e incertas
+Como descrito por Rabiner (1989), "os Modelos Ocultos de Markov fornecem uma estrutura estatística rica e flexível para modelar séries temporais e sequências, sendo particularmente poderosos quando o sistema sendo modelado assume ser um processo Markoviano com estados não diretamente observáveis".
+
+Dessa forma, o objetivo é implementar um modelo Makoviano Oculto através dos algoritmos de Forward, Backward e Smoothing (Forward-Backward) para realizar inferência probabilística em modelos dinâmicos ocultos, estimando a evolução do estado interno de um sistema ao longo do tempo com base em observações parciais e incertas
 
 ## Descrição do problema
 
@@ -108,7 +114,10 @@ Essa modelagem permite compreender como os estados emocionais dos pais evoluem d
 # Documentação sobre o algoritmo de Filtro de Kalman
 
 ## Objetivo
-Implementar o filtro de Kalman para estimar de forma recursiva e ótima o estado de um sistema dinâmico sujeito a ruído gaussiano, combinando previsões baseadas em um modelo de transição de estados com atualizações provenientes de medições ruidosas. O objetivo é fornecer uma estimativa contínua e refinada do estado real do sistema ao longo do tempo.
+
+Como descrito por Welch e Bishop (2006), "o Filtro de Kalman é um estimador recursivo ótimo que combina todas as informações disponíveis, independentemente de sua precisão, para estimar o estado atual de um sistema linear dinâmico perturbado por ruído branco".
+
+Nesse contexto, o objetivo é implementar o filtro de Kalman para estimar de forma recursiva e ótima o estado de um sistema dinâmico sujeito a ruído gaussiano, combinando previsões baseadas em um modelo de transição de estados com atualizações provenientes de medições ruidosas. O objetivo é fornecer uma estimativa contínua e refinada do estado real do sistema ao longo do tempo.
 
 ## Descrição do problema
 
@@ -144,3 +153,23 @@ O resultado é uma estimativa suavizada da temperatura que filtra o ruído do se
 
 </center>
 
+## Análise crítica
+
+A implementação dos três métodos — Redes Bayesianas, Modelos Ocultos de Markov (HMM) e Filtro de Kalman — evidenciam como diferentes abordagens probabilísticas tratam incerteza, dependências e evolução temporal, cada uma apresentando vantagens e limitações específicas de acordo com o tipo de problema.
+
+De forma geral, Redes Bayesianas são mais adequadas para modelar relações estruturais e causais entre variáveis, especialmente em cenários estáticos ou em sistemas onde a dependência temporal não é o fator predominante. Sua principal força está na capacidade de representar explicitamente independências condicionais e realizar inferências com evidências parciais, sendo valiosas em áreas como diagnóstico, classificação e análise de risco.
+
+Em contraste, Modelos Ocultos de Markov e o Filtro de Kalman são métodos voltados para processos dinâmicos, onde o estado do sistema evolui no tempo.
+Assim, HMMs trabalham naturalmente com estados ocultos discretos e observações também discretas, oferecendo algoritmos eficientes (como o Forward-Backward) para inferir a distribuição dos estados ao longo de uma sequência. São amplamente utilizados em reconhecimento de fala, análise de séries temporais categóricas e modelagem de comportamento.
+
+Já o Filtro de Kalman é projetado para sistemas lineares com estados contínuos e ruído gaussiano, realizando estimativas recursivas de alta precisão. Sua aplicação é comum em controle, robótica, navegação e rastreamento, onde é necessário acompanhar continuamente a evolução de grandezas físicas sujeitas a medições ruidosas.
+
+Apesar das diferenças, os três métodos compartilham a ideia central de combinar informações incertas para produzir estimativas probabilísticas coerentes. Portanto, a escolha do modelo mais adequado deve considerar tanto a natureza dos dados quanto os objetivos da análise, garantindo uma solução eficiente e coerente com o domínio do problema.
+
+## Referência bibliogŕafica:
+
+PEARL, J. *Probabilistic Reasoning in Intelligent Systems: Networks of Plausible Inference*. Morgan Kaufmann, 1988.
+
+RABINER, L. R. *A Tutorial on Hidden Markov Models and Selected Applications in Speech Recognition*. Proceedings of the IEEE, v. 77, n. 2, p. 257-286, 1989.
+
+WELCH, G.; BISHOP, G. *An Introduction to the Kalman Filter*. University of North Carolina at Chapel Hill, Technical Report TR 95-041, 2006.
