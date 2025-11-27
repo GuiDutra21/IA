@@ -1,0 +1,14 @@
+// Feedforward Neural Network XOR
+digraph {
+	X1 [label="Entrada 1"]
+	X2 [label="Entrada 2"]
+	H1 [label="Oculta 1"]
+	H2 [label="Oculta 2"]
+	O1 [label="Saída"]
+	X1 -> H1
+	X1 -> H2
+	X2 -> H1
+	X2 -> H2
+	H1 -> O1
+	H2 -> O1
+}
