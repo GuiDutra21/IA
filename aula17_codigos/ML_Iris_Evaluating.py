@@ -10,6 +10,8 @@ iris_dataset['data'], iris_dataset['target'], random_state=0)
 
 # training and classification method
 from sklearn.neighbors import KNeighborsClassifier
+
+# Modelo original com k=1
 knn = KNeighborsClassifier(n_neighbors=1)
 
 # Training

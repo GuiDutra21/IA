@@ -17,9 +17,19 @@ xx, yy = np.meshgrid(np.linspace(x_min, x_max, 500), np.linspace(y_min, y_max, 5
 Z = clf.decision_function(np.c_[xx.ravel(), yy.ravel()])
 Z = Z.reshape(xx.shape)
 
-# Plotar pontos e fronteiras
+
+# Plotar pontos
 plt.scatter(X[:, 0], X[:, 1], c=y, cmap=plt.cm.coolwarm, s=50, edgecolors='k')
-plt.contour(xx, yy, Z, levels=[0], colors='k')  # Fronteira de decisão
+
+# Pinta as regioes
+plt.contourf(xx, yy, Z, alpha=0.3, cmap=plt.cm.coolwarm, levels=3)
+
+# Plotar fronteira de decisão e margens
+plt.contour(xx, yy, Z, levels=[-1, 0, 1], 
+            linestyles=['--', '-', '--'],
+            colors='k', 
+            linewidths=2)
+
 plt.title('SVM não linear com kernel RBF')
 plt.xlabel('Feature 1')
 plt.ylabel('Feature 2')
