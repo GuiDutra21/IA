@@ -2,249 +2,236 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn import svm
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+from sklearn.inspection import permutation_importance
 import seaborn as sns
 
-# ============================================
-# 1. CARREGAR E EXPLORAR OS DADOS
-# ============================================
+# Carrega dataset
+dados = pd.read_csv('cars_dataset.csv')
 
-# Carregar dataset
-df = pd.read_csv('  cars_dataset.csv')
-
-print("="*60)
-print("ANÁLISE EXPLORATÓRIA DO DATASET DE CARROS")
-print("="*60)
-print(f"\nShape: {df.shape}")
-print(f"\nPrimeiras linhas:")
-print(df.head(10))
-
-print(f"\nInformações das colunas:")
-print(df.info())
-
-print(f"\nDistribuição das classes:")
-print(df['car'].value_counts())
-print(f"\nPercentual:")
-print(df['car'].value_counts(normalize=True) * 100)
-
-print(f"\nValores únicos por coluna:")
-for col in df.columns:
-    print(f"  {col}: {df[col].unique()}")
-
-# ============================================
-# 2. PRÉ-PROCESSAMENTO
-# ============================================
-
-print("\n" + "="*60)
-print("PRÉ-PROCESSAMENTO DOS DADOS")
-print("="*60)
-
-# Criar cópia para não modificar original
-df_processed = df.copy()
-
-# Codificar todas as variáveis categóricas
+# Codifica todas as variáveis em numeros, pois o SVM so trabalha com valores numericos
 label_encoders = {}
-for column in df_processed.columns:
+for coluna in dados.columns:
     le = LabelEncoder()
-    df_processed[column] = le.fit_transform(df_processed[column])
-    label_encoders[column] = le
-    print(f"\n{column}: {dict(zip(le.classes_, le.transform(le.classes_)))}")
+    dados[coluna] = le.fit_transform(dados[coluna])
+    label_encoders[coluna] = le
+    print(f"\n{coluna}: {dict(zip(le.classes_, le.transform(le.classes_)))}")
+    
+# Separa features (X) e classes (y)
+X = dados.drop('car', axis=1).values
+y = dados['car'].values
 
-# Separar features (X) e target (y)
-X = df_processed.drop('car', axis=1).values
-y = df_processed['car'].values
-
-print(f"\nShape de X: {X.shape}")
-print(f"Shape de y: {y.shape}")
-print(f"Classes: {np.unique(y)}")
-
-# ============================================
-# 3. DIVIDIR DADOS TREINO/TESTE
-# ============================================
-
+# Dividir os dados de treino e teste, 20% para teste
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42, stratify=y
 )
 
-print(f"\nDados de treino: {X_train.shape[0]} amostras")
-print(f"Dados de teste: {X_test.shape[0]} amostras")
+print("\n" + "="*70)
+print("TREINAMENTO DOS MODELOS SVM")
+print("="*70)
 
-# ============================================
-# 4. TREINAR MODELOS SVM
-# ============================================
-
-print("\n" + "="*60)
-print("TREINAMENTO DE MODELOS SVM")
-print("="*60)
-
-# Diferentes kernels para comparar
+# Diferentes kernels para comparar (SVM)
 kernels = ['linear', 'rbf', 'poly']
-models = {}
-accuracies = {}
+modelos_svm = {}
+acuracias_svm = {}
 
+# Treina o modelo SVM para cada kernel
 for kernel in kernels:
     print(f"\nTreinando SVM com kernel {kernel}...")
-    
+
     if kernel == 'poly':
         clf = svm.SVC(kernel=kernel, degree=3, random_state=42)
     else:
         clf = svm.SVC(kernel=kernel, random_state=42)
-    
+
     clf.fit(X_train, y_train)
     y_pred = clf.predict(X_test)
+
+    acuracia = accuracy_score(y_test, y_pred)
+    modelos_svm[kernel] = clf
+    acuracias_svm[kernel] = acuracia
     
-    accuracy = accuracy_score(y_test, y_pred)
-    models[kernel] = clf
-    accuracies[kernel] = accuracy
-    
-    print(f"  Acurácia: {accuracy:.4f} ({accuracy*100:.2f}%)")
-    print(f"  Vetores de suporte: {len(clf.support_vectors_)}")
+    print(f"  Acurácia: {acuracia:.4f} ({acuracia*100:.2f}%)")
 
-# Escolher melhor modelo
-best_kernel = max(accuracies, key=accuracies.get)
-best_model = models[best_kernel]
+# Escolhe o melhor modelo SVM
+melhor_kernel_svm = max(acuracias_svm, key=acuracias_svm.get)
+melhor_modelo_svm = modelos_svm[melhor_kernel_svm]
 
-print(f"\n🏆 Melhor modelo: {best_kernel} (Acurácia: {accuracies[best_kernel]:.4f})")
+print(f"\nMelhor SVM: {melhor_kernel_svm} (Acurácia: {acuracias_svm[melhor_kernel_svm]:.4f})")
 
-# ============================================
-# 5. AVALIAÇÃO DETALHADA DO MELHOR MODELO
-# ============================================
+print("\n" + "="*70)
+print("TREINAMENTO DO RANDOM FOREST")
+print("="*70)
 
-print("\n" + "="*60)
-print(f"AVALIAÇÃO DETALHADA - KERNEL {best_kernel.upper()}")
-print("="*60)
-
-y_pred = best_model.predict(X_test)
-
-# Relatório de classificação
-print("\nRelatório de Classificação:")
-target_names = label_encoders['car'].classes_
-print(classification_report(y_test, y_pred, target_names=target_names))
-
-# Matriz de confusão
-cm = confusion_matrix(y_test, y_pred)
-print("\nMatriz de Confusão:")
-print(cm)
-
-# ============================================
-# 6. VISUALIZAÇÕES
-# ============================================
-
-fig = plt.figure(figsize=(18, 12))
-
-# Subplot 1: Comparação de Acurácias
-ax1 = plt.subplot(2, 3, 1)
-kernels_list = list(accuracies.keys())
-accs = list(accuracies.values())
-colors = ['green' if k == best_kernel else 'steelblue' for k in kernels_list]
-bars = ax1.bar(kernels_list, accs, color=colors, edgecolor='black', linewidth=2)
-ax1.set_ylabel('Acurácia', fontsize=12)
-ax1.set_title('Comparação de Kernels SVM', fontsize=14, fontweight='bold')
-ax1.set_ylim(0, 1)
-for bar, acc in zip(bars, accs):
-    height = bar.get_height()
-    ax1.text(bar.get_x() + bar.get_width()/2., height,
-             f'{acc:.2%}', ha='center', va='bottom', fontsize=11, fontweight='bold')
-ax1.grid(axis='y', alpha=0.3)
-
-# Subplot 2: Distribuição das Classes
-ax2 = plt.subplot(2, 3, 2)
-class_counts = df['car'].value_counts()
-colors_pie = ['#ff9999','#66b3ff','#99ff99','#ffcc99']
-ax2.pie(class_counts.values, labels=class_counts.index, autopct='%1.1f%%',
-        startangle=90, colors=colors_pie, textprops={'fontsize': 11, 'fontweight': 'bold'})
-ax2.set_title('Distribuição das Classes no Dataset', fontsize=14, fontweight='bold')
-
-# Subplot 3: Matriz de Confusão (Heatmap)
-ax3 = plt.subplot(2, 3, 3)
-sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', 
-            xticklabels=target_names, yticklabels=target_names,
-            cbar_kws={'label': 'Contagem'}, ax=ax3)
-ax3.set_xlabel('Predito', fontsize=12)
-ax3.set_ylabel('Real', fontsize=12)
-ax3.set_title(f'Matriz de Confusão - {best_kernel}', fontsize=14, fontweight='bold')
-
-# Subplot 4: Importância das Features (aproximada via permutação)
-ax4 = plt.subplot(2, 3, 4)
-from sklearn.inspection import permutation_importance
-perm_importance = permutation_importance(best_model, X_test, y_test, n_repeats=10, random_state=42)
-feature_names = ['Buying', 'Maint', 'Doors', 'Persons', 'Lug_boot', 'Safety']
-indices = np.argsort(perm_importance.importances_mean)[::-1]
-ax4.barh(range(len(indices)), perm_importance.importances_mean[indices], color='coral', edgecolor='black')
-ax4.set_yticks(range(len(indices)))
-ax4.set_yticklabels([feature_names[i] for i in indices])
-ax4.set_xlabel('Importância', fontsize=12)
-ax4.set_title('Importância das Features', fontsize=14, fontweight='bold')
-ax4.grid(axis='x', alpha=0.3)
-
-# Subplot 5: Predições Corretas vs Incorretas
-ax5 = plt.subplot(2, 3, 5)
-correct = np.sum(y_pred == y_test)
-incorrect = len(y_test) - correct
-ax5.bar(['Corretas', 'Incorretas'], [correct, incorrect], 
-        color=['green', 'red'], edgecolor='black', linewidth=2, alpha=0.7)
-ax5.set_ylabel('Quantidade', fontsize=12)
-ax5.set_title('Predições do Modelo', fontsize=14, fontweight='bold')
-for i, v in enumerate([correct, incorrect]):
-    ax5.text(i, v + 5, str(v), ha='center', fontsize=12, fontweight='bold')
-ax5.grid(axis='y', alpha=0.3)
-
-# Subplot 6: Número de Vetores de Suporte por Kernel
-ax6 = plt.subplot(2, 3, 6)
-n_support = [len(models[k].support_vectors_) for k in kernels_list]
-ax6.bar(kernels_list, n_support, color='purple', edgecolor='black', linewidth=2, alpha=0.6)
-ax6.set_ylabel('Nº Vetores de Suporte', fontsize=12)
-ax6.set_title('Complexidade dos Modelos', fontsize=14, fontweight='bold')
-for i, (k, v) in enumerate(zip(kernels_list, n_support)):
-    ax6.text(i, v + 10, str(v), ha='center', fontsize=11, fontweight='bold')
-ax6.grid(axis='y', alpha=0.3)
-
-plt.tight_layout()
-plt.savefig('svm_car_evaluation_analysis.png', dpi=150, bbox_inches='tight')
-plt.show()
-
-# ============================================
-# 7. TESTAR NOVOS CARROS
-# ============================================
-
-print("\n" + "="*60)
-print("TESTANDO NOVOS CARROS")
-print("="*60)
-
-# Criar exemplos de carros para testar
-test_cars = [
-    {'buying': 'low', 'maint': 'low', 'doors': 'four', 'persons': 'more', 'lug_boot': 'big', 'safety': 'high'},
-    {'buying': 'vhigh', 'maint': 'vhigh', 'doors': 'two', 'persons': 'two', 'lug_boot': 'small', 'safety': 'low'},
-    {'buying': 'med', 'maint': 'med', 'doors': 'four', 'persons': 'four', 'lug_boot': 'med', 'safety': 'med'},
-    {'buying': 'high', 'maint': 'low', 'doors': 'three', 'persons': 'four', 'lug_boot': 'big', 'safety': 'high'},
+# Treina Random Forest com diferentes configurações
+rf_configs = [
+    {'n_estimators': 50, 'max_depth': 5},
+    {'n_estimators': 100, 'max_depth': 10},
+    {'n_estimators': 200, 'max_depth': None}
 ]
 
-for i, car in enumerate(test_cars, 1):
-    # Codificar
-    car_encoded = []
-    for col in ['buying', 'maint', 'doors', 'persons', 'lug_boot', 'safety']:
-        car_encoded.append(label_encoders[col].transform([car[col]])[0])
-    
-    # Predizer
-    prediction = best_model.predict([car_encoded])[0]
-    prediction_label = label_encoders['car'].inverse_transform([prediction])[0]
-    
-    # Mostrar resultado
-    print(f"\n🚗 Carro {i}:")
-    print(f"  Características: {car}")
-    print(f"  → Avaliação prevista: {prediction_label.upper()}")
-    
-    # Interpretação
-    interpretations = {
-        'unacc': '❌ Inaceitável',
-        'acc': '✅ Aceitável',
-        'good': '⭐ Bom',
-        'vgood': '🌟 Muito Bom'
-    }
-    print(f"  → {interpretations.get(prediction_label, 'Desconhecido')}")
+modelos_rf = {}
+acuracias_rf = {}
 
-print("\n" + "="*60)
-print("ANÁLISE CONCLUÍDA!")
-print("="*60)
+for i, config in enumerate(rf_configs):
+    print(f"\nTreinando Random Forest (n_estimators={config['n_estimators']}, max_depth={config['max_depth']})...")
+    
+    clf_rf = RandomForestClassifier(
+        n_estimators=config['n_estimators'],
+        max_depth=config['max_depth'],
+        random_state=42
+    )
+    
+    clf_rf.fit(X_train, y_train)
+    y_pred_rf = clf_rf.predict(X_test)
+    
+    acuracia_rf = accuracy_score(y_test, y_pred_rf)
+    nome_config = f"RF_{config['n_estimators']}_{config['max_depth']}"
+    modelos_rf[nome_config] = clf_rf
+    acuracias_rf[nome_config] = acuracia_rf
+    
+    print(f"  Acurácia: {acuracia_rf:.4f} ({acuracia_rf*100:.2f}%)")
+
+# Escolhe o melhor modelo Random Forest
+melhor_config_rf = max(acuracias_rf, key=acuracias_rf.get)
+melhor_modelo_rf = modelos_rf[melhor_config_rf]
+
+print(f"\nMelhor Random Forest: {melhor_config_rf} (Acurácia: {acuracias_rf[melhor_config_rf]:.4f})")
+
+print("\n" + "="*70)
+print("COMPARAÇÃO FINAL")
+print("="*70)
+print(f"SVM ({melhor_kernel_svm}): {acuracias_svm[melhor_kernel_svm]:.4f}")
+print(f"Random Forest ({melhor_config_rf}): {acuracias_rf[melhor_config_rf]:.4f}")
+
+# Predições dos melhores modelos
+y_pred_svm = melhor_modelo_svm.predict(X_test)
+y_pred_rf = melhor_modelo_rf.predict(X_test)
+
+# Matrizes de confusão
+matriz_svm = confusion_matrix(y_test, y_pred_svm)
+matriz_rf = confusion_matrix(y_test, y_pred_rf)
+
+print("\n--- Relatório SVM ---")
+target_names = label_encoders['car'].classes_
+print(classification_report(y_test, y_pred_svm, target_names=target_names))
+
+print("\n--- Relatório Random Forest ---")
+print(classification_report(y_test, y_pred_rf, target_names=target_names))
+
+# VISUALIZAÇÕES COMPARATIVAS
+fig = plt.figure(figsize=(16, 10))
+
+# 1. Comparação de Acurácia entre todos os modelos
+ax1 = plt.subplot(2, 3, 1)
+todos_modelos = list(acuracias_svm.keys()) + list(acuracias_rf.keys())
+todas_acuracias = list(acuracias_svm.values()) + list(acuracias_rf.values())
+cores = ['blue']*len(acuracias_svm) + ['green']*len(acuracias_rf)
+
+bars = ax1.bar(range(len(todos_modelos)), todas_acuracias, color=cores, edgecolor='black', alpha=0.7)
+ax1.set_xticks(range(len(todos_modelos)))
+ax1.set_xticklabels(todos_modelos, rotation=45, ha='right')
+ax1.set_ylabel('Acurácia', fontsize=12)
+ax1.set_title('Comparação de Acurácia: SVM vs Random Forest', fontsize=14, fontweight='bold')
+ax1.grid(axis='y', alpha=0.3)
+ax1.axhline(y=max(todas_acuracias), color='red', linestyle='--', alpha=0.5)
+
+# Legenda
+from matplotlib.patches import Patch
+legend_elements = [Patch(facecolor='blue', alpha=0.7, label='SVM'),
+                   Patch(facecolor='green', alpha=0.7, label='Random Forest')]
+ax1.legend(handles=legend_elements, loc='lower right')
+
+# 2. Importância das Features - SVM
+ax2 = plt.subplot(2, 3, 2)
+perm_importance_svm = permutation_importance(melhor_modelo_svm, X_test, y_test, n_repeats=10, random_state=42)
+feature_names = ['Buying', 'Maint', 'Doors', 'Persons', 'Lug_boot', 'Safety']
+indices_svm = np.argsort(perm_importance_svm.importances_mean)[::-1]
+ax2.barh(range(len(indices_svm)), perm_importance_svm.importances_mean[indices_svm], color='blue', edgecolor='black')
+ax2.set_yticks(range(len(indices_svm)))
+ax2.set_yticklabels([feature_names[i] for i in indices_svm])
+ax2.set_xlabel('Importância', fontsize=12)
+ax2.set_title(f'Importância das Features - SVM ({melhor_kernel_svm})', fontsize=14, fontweight='bold')
+ax2.grid(axis='x', alpha=0.3)
+
+# 3. Importância das Features - Random Forest
+ax3 = plt.subplot(2, 3, 3)
+# Random Forest tem importância nativa
+importancias_rf = melhor_modelo_rf.feature_importances_
+indices_rf = np.argsort(importancias_rf)[::-1]
+ax3.barh(range(len(indices_rf)), importancias_rf[indices_rf], color='green', edgecolor='black')
+ax3.set_yticks(range(len(indices_rf)))
+ax3.set_yticklabels([feature_names[i] for i in indices_rf])
+ax3.set_xlabel('Importância', fontsize=12)
+ax3.set_title(f'Importância das Features - Random Forest', fontsize=14, fontweight='bold')
+ax3.grid(axis='x', alpha=0.3)
+
+# 4. Matriz de Confusão - SVM
+ax4 = plt.subplot(2, 3, 4)
+sns.heatmap(matriz_svm, annot=True, fmt='d', cmap='Blues', 
+            xticklabels=target_names, yticklabels=target_names, ax=ax4, cbar=False)
+ax4.set_xlabel('Predito', fontsize=12)
+ax4.set_ylabel('Real', fontsize=12)
+ax4.set_title(f'Matriz de Confusão - SVM\nAcurácia: {acuracias_svm[melhor_kernel_svm]:.4f}', 
+              fontsize=14, fontweight='bold')
+
+# 5. Matriz de Confusão - Random Forest
+ax5 = plt.subplot(2, 3, 5)
+sns.heatmap(matriz_rf, annot=True, fmt='d', cmap='Greens', 
+            xticklabels=target_names, yticklabels=target_names, ax=ax5, cbar=False)
+ax5.set_xlabel('Predito', fontsize=12)
+ax5.set_ylabel('Real', fontsize=12)
+ax5.set_title(f'Matriz de Confusão - Random Forest\nAcurácia: {acuracias_rf[melhor_config_rf]:.4f}', 
+              fontsize=14, fontweight='bold')
+
+# 6. Predições Corretas vs Incorretas - Comparação
+ax6 = plt.subplot(2, 3, 6)
+corretas_svm = np.sum(y_pred_svm == y_test)
+incorretas_svm = len(y_test) - corretas_svm
+corretas_rf = np.sum(y_pred_rf == y_test)
+incorretas_rf = len(y_test) - corretas_rf
+
+x = np.arange(2)
+width = 0.35
+
+bars1 = ax6.bar(x - width/2, [corretas_svm, incorretas_svm], width, 
+                label='SVM', color='blue', edgecolor='black', alpha=0.7)
+bars2 = ax6.bar(x + width/2, [corretas_rf, incorretas_rf], width,
+                label='Random Forest', color='green', edgecolor='black', alpha=0.7)
+
+ax6.set_ylabel('Quantidade', fontsize=12)
+ax6.set_title('Predições: SVM vs Random Forest', fontsize=14, fontweight='bold')
+ax6.set_xticks(x)
+ax6.set_xticklabels(['Corretas', 'Incorretas'])
+ax6.legend()
+ax6.grid(axis='y', alpha=0.3)
+
+# Adicionar valores nas barras
+for bars in [bars1, bars2]:
+    for bar in bars:
+        height = bar.get_height()
+        ax6.text(bar.get_x() + bar.get_width()/2., height,
+                f'{int(height)}', ha='center', va='bottom', fontsize=10, fontweight='bold')
+
+plt.tight_layout()
+plt.show()
+
+print("\n" + "="*70)
+print("ANÁLISE COMPARATIVA")
+print("="*70)
+
+if acuracias_svm[melhor_kernel_svm] > acuracias_rf[melhor_config_rf]:
+    diff = acuracias_svm[melhor_kernel_svm] - acuracias_rf[melhor_config_rf]
+    print(f"✓ SVM ({melhor_kernel_svm}) é MELHOR por {diff:.4f} ({diff*100:.2f}%)")
+elif acuracias_rf[melhor_config_rf] > acuracias_svm[melhor_kernel_svm]:
+    diff = acuracias_rf[melhor_config_rf] - acuracias_svm[melhor_kernel_svm]
+    print(f"✓ Random Forest ({melhor_config_rf}) é MELHOR por {diff:.4f} ({diff*100:.2f}%)")
+else:
+    print("✓ Empate técnico entre os modelos")
+
+print(f"\nPredições corretas:")
+print(f"  SVM: {corretas_svm}/{len(y_test)}")
+print(f"  Random Forest: {corretas_rf}/{len(y_test)}")
