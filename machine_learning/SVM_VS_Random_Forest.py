@@ -2,15 +2,18 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn import svm
-from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.inspection import permutation_importance
 import seaborn as sns
 
 # Carrega dataset
 dados = pd.read_csv('cars_dataset.csv')
+
+# Treinamento do SVM
+print('Treinamento do SVM:')
 
 # Codifica todas as variáveis em numeros, pois o SVM so trabalha com valores numericos
 label_encoders = {}
@@ -18,59 +21,54 @@ for coluna in dados.columns:
     le = LabelEncoder()
     dados[coluna] = le.fit_transform(dados[coluna])
     label_encoders[coluna] = le
-    print(f"\n{coluna}: {dict(zip(le.classes_, le.transform(le.classes_)))}")
     
 # Separa features (X) e classes (y)
 X = dados.drop('car', axis=1).values
 y = dados['car'].values
 
-# Dividir os dados de treino e teste, 20% para teste
+# Dvidir os dados de treino e teste, 20% para teste
 X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42, stratify=y
+    X, y, test_size=0.25, random_state=42, stratify=y
 )
 
-print("\n" + "="*70)
-print("TREINAMENTO DOS MODELOS SVM")
-print("="*70)
-
-# Diferentes kernels para comparar (SVM)
+# Diferentes kernels para comparar
 kernels = ['linear', 'rbf', 'poly']
 modelos_svm = {}
 acuracias_svm = {}
 
-# Treina o modelo SVM para cada kernel
+# Treina o modelo para cada kernel
 for kernel in kernels:
     print(f"\nTreinando SVM com kernel {kernel}...")
 
     if kernel == 'poly':
-        clf = svm.SVC(kernel=kernel, degree=3, random_state=42)
+        clf_svm = svm.SVC(kernel=kernel, degree=3, random_state=42)
     else:
-        clf = svm.SVC(kernel=kernel, random_state=42)
+        clf_svm = svm.SVC(kernel=kernel, random_state=42)
 
-    clf.fit(X_train, y_train)
-    y_pred = clf.predict(X_test)
+    clf_svm.fit(X_train,y_train)
+    y_pred = clf_svm.predict(X_test)
 
     acuracia = accuracy_score(y_test, y_pred)
-    modelos_svm[kernel] = clf
+    modelos_svm[kernel] = clf_svm
     acuracias_svm[kernel] = acuracia
     
     print(f"  Acurácia: {acuracia:.4f} ({acuracia*100:.2f}%)")
 
-# Escolhe o melhor modelo SVM
-melhor_kernel_svm = max(acuracias_svm, key=acuracias_svm.get)
+# Escolhe o melhor modelo
+melhor_kernel_svm = max(acuracias_svm,key=acuracias_svm.get)
 melhor_modelo_svm = modelos_svm[melhor_kernel_svm]
 
-print(f"\nMelhor SVM: {melhor_kernel_svm} (Acurácia: {acuracias_svm[melhor_kernel_svm]:.4f})")
+print(f"\nMelhor modelo: {melhor_kernel_svm} (Acurácia: {acuracias_svm[melhor_kernel_svm]:.4f})")
 
-print("\n" + "="*70)
-print("TREINAMENTO DO RANDOM FOREST")
-print("="*70)
+print("\n" + "-" * 70)
 
-# Treina Random Forest com diferentes configurações
+# Treinamento do Random Forest
+print('Treinamento do Random Forest')
+
 rf_configs = [
     {'n_estimators': 50, 'max_depth': 5},
     {'n_estimators': 100, 'max_depth': 10},
-    {'n_estimators': 200, 'max_depth': None}
+    {'n_estimators': 200, 'max_depth': 20}
 ]
 
 modelos_rf = {}
@@ -84,11 +82,12 @@ for i, config in enumerate(rf_configs):
         max_depth=config['max_depth'],
         random_state=42
     )
-    
+
     clf_rf.fit(X_train, y_train)
+    
     y_pred_rf = clf_rf.predict(X_test)
     
-    acuracia_rf = accuracy_score(y_test, y_pred_rf)
+    acuracia_rf = accuracy_score(y_test,y_pred_rf)
     nome_config = f"RF_{config['n_estimators']}_{config['max_depth']}"
     modelos_rf[nome_config] = clf_rf
     acuracias_rf[nome_config] = acuracia_rf
@@ -101,29 +100,31 @@ melhor_modelo_rf = modelos_rf[melhor_config_rf]
 
 print(f"\nMelhor Random Forest: {melhor_config_rf} (Acurácia: {acuracias_rf[melhor_config_rf]:.4f})")
 
-print("\n" + "="*70)
-print("COMPARAÇÃO FINAL")
-print("="*70)
-print(f"SVM ({melhor_kernel_svm}): {acuracias_svm[melhor_kernel_svm]:.4f}")
-print(f"Random Forest ({melhor_config_rf}): {acuracias_rf[melhor_config_rf]:.4f}")
-
-# Predições dos melhores modelos
-y_pred_svm = melhor_modelo_svm.predict(X_test)
-y_pred_rf = melhor_modelo_rf.predict(X_test)
+print("\n" + "-" * 70)
+print('Comparacoes')
 
 # Matrizes de confusão
-matriz_svm = confusion_matrix(y_test, y_pred_svm)
-matriz_rf = confusion_matrix(y_test, y_pred_rf)
+matriz_svm = confusion_matrix(y_test, y_pred)
+print("\nMatriz de Confusão do SVM:")
+print(matriz_svm)
 
-print("\n--- Relatório SVM ---")
+print("\nMatriz de Confusão do SVM:")
+matriz_rf = confusion_matrix(y_test, y_pred_rf)
+print(matriz_rf)
+
+# Relatório de classificação
 target_names = label_encoders['car'].classes_
+print("\nRelatório de Classificação do SVM:")
+y_pred_svm = melhor_modelo_svm.predict(X_test)
 print(classification_report(y_test, y_pred_svm, target_names=target_names))
 
-print("\n--- Relatório Random Forest ---")
+print("\nRelatório de Classificação do Random Forest:")
+y_pred_rf = melhor_modelo_rf.predict(X_test)
 print(classification_report(y_test, y_pred_rf, target_names=target_names))
 
-# VISUALIZAÇÕES COMPARATIVAS
-fig = plt.figure(figsize=(16, 10))
+
+# Parte dos graficos
+fig = plt.figure(figsize=(16, 12))
 
 # 1. Comparação de Acurácia entre todos os modelos
 ax1 = plt.subplot(2, 3, 1)
@@ -131,13 +132,15 @@ todos_modelos = list(acuracias_svm.keys()) + list(acuracias_rf.keys())
 todas_acuracias = list(acuracias_svm.values()) + list(acuracias_rf.values())
 cores = ['blue']*len(acuracias_svm) + ['green']*len(acuracias_rf)
 
-bars = ax1.bar(range(len(todos_modelos)), todas_acuracias, color=cores, edgecolor='black', alpha=0.7)
+ax1.bar(range(len(todos_modelos)), todas_acuracias, color=cores, edgecolor='black', alpha=0.7)
 ax1.set_xticks(range(len(todos_modelos)))
 ax1.set_xticklabels(todos_modelos, rotation=45, ha='right')
 ax1.set_ylabel('Acurácia', fontsize=12)
 ax1.set_title('Comparação de Acurácia: SVM vs Random Forest', fontsize=14, fontweight='bold')
 ax1.grid(axis='y', alpha=0.3)
-ax1.axhline(y=max(todas_acuracias), color='red', linestyle='--', alpha=0.5)
+for i, (modelo, acuracia) in enumerate(zip(todos_modelos, todas_acuracias)):
+    ax1.text(i, acuracia + 0.01, f'{acuracia:.3f}', 
+             ha='center', va='bottom', fontsize=10, fontweight='bold')
 
 # Legenda
 from matplotlib.patches import Patch
@@ -159,6 +162,7 @@ ax2.grid(axis='x', alpha=0.3)
 
 # 3. Importância das Features - Random Forest
 ax3 = plt.subplot(2, 3, 3)
+
 # Random Forest tem importância nativa
 importancias_rf = melhor_modelo_rf.feature_importances_
 indices_rf = np.argsort(importancias_rf)[::-1]
@@ -209,7 +213,6 @@ ax6.set_xticklabels(['Corretas', 'Incorretas'])
 ax6.legend()
 ax6.grid(axis='y', alpha=0.3)
 
-# Adicionar valores nas barras
 for bars in [bars1, bars2]:
     for bar in bars:
         height = bar.get_height()
@@ -218,20 +221,3 @@ for bars in [bars1, bars2]:
 
 plt.tight_layout()
 plt.show()
-
-print("\n" + "="*70)
-print("ANÁLISE COMPARATIVA")
-print("="*70)
-
-if acuracias_svm[melhor_kernel_svm] > acuracias_rf[melhor_config_rf]:
-    diff = acuracias_svm[melhor_kernel_svm] - acuracias_rf[melhor_config_rf]
-    print(f"✓ SVM ({melhor_kernel_svm}) é MELHOR por {diff:.4f} ({diff*100:.2f}%)")
-elif acuracias_rf[melhor_config_rf] > acuracias_svm[melhor_kernel_svm]:
-    diff = acuracias_rf[melhor_config_rf] - acuracias_svm[melhor_kernel_svm]
-    print(f"✓ Random Forest ({melhor_config_rf}) é MELHOR por {diff:.4f} ({diff*100:.2f}%)")
-else:
-    print("✓ Empate técnico entre os modelos")
-
-print(f"\nPredições corretas:")
-print(f"  SVM: {corretas_svm}/{len(y_test)}")
-print(f"  Random Forest: {corretas_rf}/{len(y_test)}")
