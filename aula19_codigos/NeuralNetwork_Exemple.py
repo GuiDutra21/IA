@@ -12,27 +12,33 @@ data, labels = make_blobs(n_samples=n_samples,
 
 # Print samples
 colours = ('green', 'orange', "blue", "magenta")
-fig, ax = plt.subplots()
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
 
 for n_class in range(len(blob_centers)):
-    ax.scatter(data[labels==n_class][:, 0], 
+    ax1.scatter(data[labels==n_class][:, 0], 
                data[labels==n_class][:, 1], 
                c=colours[n_class], 
                s=30, 
                label=str(n_class))
 
+ax1.set_xlabel('Feature 1')
+ax1.set_ylabel('Feature 2')
+ax1.set_title('Dados Originais (4 Clusters)')
+ax1.legend()
+
 #Creates training set and testing set
 from sklearn.model_selection import train_test_split
 datasets = train_test_split(data, 
                             labels,
-                            test_size=0.2)
+                            test_size=0.2,
+                            random_state=42)
 
 train_data, test_data, train_labels, test_labels = datasets
 
 #Creates the Feedforward Neural Network.
 from sklearn.neural_network import MLPClassifier
 
-clf = MLPClassifier(activation='tanh', solver='lbfgs', 
+clf = MLPClassifier(activation='relu', solver='lbfgs', 
                     alpha=1e-5,
                     hidden_layer_sizes=(6,), 
                     random_state=1)
@@ -70,7 +76,29 @@ from sklearn.metrics import accuracy_score
 
 predictions_train = clf.predict(train_data)
 predictions_test = clf.predict(test_data)
+
 train_score = accuracy_score(predictions_train, train_labels)
 print("score on train data: ", train_score)
+
 test_score = accuracy_score(predictions_test, test_labels)
 print("score on test data: ", test_score)
+
+import numpy as np
+# Cria grid de pontos
+x_min, x_max = data[:, 0].min() - 0.5, data[:, 0].max() + 0.5
+y_min, y_max = data[:, 1].min() - 0.5, data[:, 1].max() + 0.5
+xx, yy = np.meshgrid(np.linspace(x_min, x_max, 200),
+                     np.linspace(y_min, y_max, 200))
+
+# Prediz classe para cada ponto do grid
+Z = clf.predict(np.c_[xx.ravel(), yy.ravel()])
+Z = Z.reshape(xx.shape)
+
+# Plota
+ax2.contourf(xx, yy, Z, alpha=0.3, cmap='viridis')
+ax2.scatter(data[:, 0], data[:, 1], c=labels, cmap='viridis', 
+            edgecolors='k', s=50)
+ax2.set_title('Fronteiras de Decisão da Rede Neural')
+ax2.set_xlabel('Feature 1')
+ax2.set_ylabel('Feature 2')
+plt.show()

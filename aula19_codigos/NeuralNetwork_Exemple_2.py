@@ -21,7 +21,6 @@ scaler.fit(train_data)
 train_data = scaler.transform(train_data)
 test_data = scaler.transform(test_data)
 
-
 # Training the Model
 from sklearn.neural_network import MLPClassifier
 # creating an classifier from the model:
